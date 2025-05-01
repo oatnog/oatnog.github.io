@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Name Role Assigner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js" defer></script>
+    <link rel="stylesheet" type="text/css" href="assign.css" />
+</head>
+<body>
+    <h1>Roundtable Assigner</h1>
+    
+    <div x-data="nameSelector">
+        <div class="container">
+            <div class="names-list">
+                <h2>Names</h2>
+                <button @click="selectAll" class="select-all-btn">Select All</button>
+                <template x-for="(name, index) in names" :key="index">
+                    <div class="name-item">
+                        <label>
+                            <input type="checkbox" x-model="name.selected">
+                            <span x-text="name.value"></span>
+                        </label>
+                    </div>
+                </template>
+                
+                <div>
+                    <input type="text" x-model="newName" placeholder="Add a new name" 
+                           @keyup.enter="addName">
+                    <button @click="addName" x-bind:disabled="!newName.trim()">Add</button>
+                </div>
+                
+                <div x-show="errorMessage" class="error-message" x-text="errorMessage"></div>
+            </div>
+            
+            <div class="result-display">
+                <h2>Role Assignment</h2>
+                <button @click="assignRoles" x-bind:disabled="getSelectedNames().length < 4">Assign Roles</button>
+                
+                <div class="cross-display" x-show="assignedRoles.length > 0">
+                    <div class="role-box role-1">
+                        <div>
+                            <div>Arguer</div>
+                            <div x-text="assignedRoles[0] || ''"></div>
+                        </div>
+                    </div>
+                    <div class="role-box role-2">
+                        <div>
+                            <div>Facilitator</div>
+                            <div x-text="assignedRoles[1] || ''"></div>
+                        </div>
+                    </div>
+                    <div class="role-box role-3">
+                        <div>
+                            <div>Scribe</div>
+                            <div x-text="assignedRoles[2] || ''"></div>
+                        </div>
+                    </div>
+                    <div class="role-box role-4">
+                        <div>
+                            <div>Challenger</div>
+                            <div x-text="assignedRoles[3] || ''"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('nameSelector', () => ({
+                names: [
+                    { value: 'Alex', selected: false },
+                    { value: 'Ashlee', selected: false },
+                    { value: 'Augie', selected: false },
+                    { value: 'Cash', selected: false },
+                    { value: 'Don', selected: false },
+                    { value: 'Em', selected: false },
+                    { value: 'Erika', selected: false },
+                    { value: 'Evan', selected: false },
+                    { value: 'Ishnoor', selected: false },
+                    { value: 'Janeea', selected: false },
+                    { value: 'Kainoa', selected: false },
+                    { value: 'Kylie', selected: false },
+                    { value: 'Luana', selected: false },
+                    { value: 'Malachi', selected: false },
+                    { value: 'Selene', selected: false },                    
+                ],
+                newName: '',
+                assignedRoles: [],
+                errorMessage: '',
+                selectAll() {
+                    const allSelected = this.names.every(name => name.selected);
+                    
+                    // If all are currently selected, deselect all; otherwise select all
+                    this.names.forEach(name => {
+                        name.selected = !allSelected;
+                    });
+                },                
+                addName() {
+                    const trimmedName = this.newName.trim();
+                    if (!trimmedName) return;
+                    
+                    // Check for duplicates
+                    if (this.names.some(name => name.value.toLowerCase() === trimmedName.toLowerCase())) {
+                        this.errorMessage = 'This name already exists in the list.';
+                        return;
+                    }
+                    
+                    this.names.push({ value: trimmedName, selected: false });
+                    this.newName = '';
+                    this.errorMessage = '';
+                },
+                
+                getSelectedNames() {
+                    return this.names.filter(name => name.selected).map(name => name.value);
+                },
+                
+                assignRoles() {
+                    const selectedNames = this.getSelectedNames();
+                    
+                    if (selectedNames.length < 4) {
+                        this.errorMessage = 'Please select at least 4 names.';
+                        return;
+                    }
+                    
+                    this.errorMessage = '';
+                    
+                    // Shuffle array and pick first 4
+                    const shuffled = [...selectedNames];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    
+                    this.assignedRoles = shuffled.slice(0, 4);
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
