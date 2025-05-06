@@ -4,8 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Name Role Assigner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
     <link rel="stylesheet" type="text/css" href="assign.css" />
+    <style>
+        .exclude-toggle {
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+        .exclude-toggle input {
+            margin-right: 4px;
+        }
+        .name-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .no-arguer-badge {
+            background-color: #f8d7da;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 0.75em;
+            margin-left: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>Roundtable Assigner</h1>
@@ -20,6 +44,11 @@
                         <label>
                             <input type="checkbox" x-model="name.selected">
                             <span x-text="name.value"></span>
+                        </label>
+                        <label class="exclude-toggle">
+                            <input type="checkbox" x-model="name.excludeFromArguer">
+                            <span>But Not Arguer</span>
+                            <span x-show="name.excludeFromArguer" class="no-arguer-badge">X</span>
                         </label>
                     </div>
                 </template>
@@ -71,21 +100,21 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('nameSelector', () => ({
                 names: [
-                    { value: 'Alex', selected: false },
-                    { value: 'Ashlee', selected: false },
-                    { value: 'Augie', selected: false },
-                    { value: 'Cash', selected: false },
-                    { value: 'Don', selected: false },
-                    { value: 'Em', selected: false },
-                    { value: 'Erika', selected: false },
-                    { value: 'Evan', selected: false },
-                    { value: 'Ishnoor', selected: false },
-                    { value: 'Janeea', selected: false },
-                    { value: 'Kainoa', selected: false },
-                    { value: 'Kylie', selected: false },
-                    { value: 'Luana', selected: false },
-                    { value: 'Malachi', selected: false },
-                    { value: 'Selene', selected: false },                    
+                    { value: 'Alex', selected: false, excludeFromArguer: false },
+                    { value: 'Ashlee', selected: false, excludeFromArguer: false },
+                    { value: 'Augie', selected: false, excludeFromArguer: false },
+                    { value: 'Cash', selected: false, excludeFromArguer: false },
+                    { value: 'Don', selected: false, excludeFromArguer: false },
+                    { value: 'Em', selected: false, excludeFromArguer: false },
+                    { value: 'Erika', selected: false, excludeFromArguer: false },
+                    { value: 'Evan', selected: false, excludeFromArguer: false },
+                    { value: 'Ishnoor', selected: false, excludeFromArguer: false },
+                    { value: 'Janeea', selected: false, excludeFromArguer: false },
+                    { value: 'Kainoa', selected: false, excludeFromArguer: false },
+                    { value: 'Kylie', selected: false, excludeFromArguer: false },
+                    { value: 'Luana', selected: false, excludeFromArguer: false },
+                    { value: 'Malachi', selected: false, excludeFromArguer: false },
+                    { value: 'Selene', selected: false, excludeFromArguer: false },                    
                 ],
                 newName: '',
                 assignedRoles: [],
@@ -107,14 +136,14 @@
                         this.errorMessage = 'This name already exists in the list.';
                         return;
                     }
-                    
-                    this.names.push({ value: trimmedName, selected: false });
+
+                    this.names.push({ value: trimmedName, selected: false, excludeFromArguer: false });
                     this.newName = '';
                     this.errorMessage = '';
                 },
                 
                 getSelectedNames() {
-                    return this.names.filter(name => name.selected).map(name => name.value);
+                    return this.names.filter(name => name.selected);
                 },
                 
                 assignRoles() {
@@ -125,16 +154,39 @@
                         return;
                     }
                     
-                    this.errorMessage = '';
-                    
-                    // Shuffle array and pick first 4
-                    const shuffled = [...selectedNames];
-                    for (let i = shuffled.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    // Check if all selected names are excluded from Arguer role
+                    const potentialArguers = selectedNames.filter(name => !name.excludeFromArguer);
+                    if (potentialArguers.length === 0) {
+                        this.errorMessage = 'At least one person must be eligible for the Arguer role.';
+                        return;
                     }
                     
-                    this.assignedRoles = shuffled.slice(0, 4);
+                    this.errorMessage = '';
+                    
+                    // Assign Arguer role first
+                    const shuffledArguers = [...potentialArguers];
+                    for (let i = shuffledArguers.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledArguers[i], shuffledArguers[j]] = [shuffledArguers[j], shuffledArguers[i]];
+                    }
+                    
+                    // Set the first role (Arguer)
+                    this.assignedRoles = [shuffledArguers[0].value];
+                    
+                    // Shuffle and assign the rest of the roles from all selected names
+                    // Excluding the person already assigned as Arguer
+                    const remainingNames = selectedNames.filter(name => name.value !== this.assignedRoles[0]);
+                    const shuffledRemaining = [...remainingNames];
+                    
+                    for (let i = shuffledRemaining.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledRemaining[i], shuffledRemaining[j]] = [shuffledRemaining[j], shuffledRemaining[i]];
+                    }
+                    
+                    // Add the next 3 roles
+                    for (let i = 0; i < 3 && i < shuffledRemaining.length; i++) {
+                        this.assignedRoles.push(shuffledRemaining[i].value);
+                    }
                 }
             }));
         });
